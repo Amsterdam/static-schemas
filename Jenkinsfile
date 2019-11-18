@@ -1,7 +1,7 @@
 #!groovy
 
 // Project Settings for Deployment
-String PROJECTNAME = "amsterdam-schema"
+String PROJECTNAME = "static-schemas"
 String CONTAINERDIR = "."
 String INFRASTRUCTURE = 'thanos'
 String PLAYBOOK = 'deploy-static.yml'
