@@ -3,8 +3,6 @@
 // Project Settings for Deployment
 String PROJECTNAME = "amsterdam-schema"
 String CONTAINERDIR = "."
-String PRODUCTION_BRANCH = "master"
-String ACCEPTANCE_BRANCH = "development"
 String INFRASTRUCTURE = 'thanos'
 String PLAYBOOK = 'deploy-static.yml'
 
@@ -45,14 +43,12 @@ node {
     }
 }
 
-// Acceptance branch, fetch the container, label with acceptance and deploy to acceptance.
-if (BRANCH == "${ACCEPTANCE_BRANCH}") {
+if (BRANCH == "master") {
     node {
         stage("Deploy to ACC") {
             tryStep "deployment", {
                 image.push("acceptance")
-                //build job: 'Subtask_Openstack_Playbook',
-                build job: 'subtask_static_test_deploy_basg',
+                build job: 'Subtask_Openstack_Playbook',
                 parameters: [
                     [$class: 'StringParameterValue', name: 'INFRASTRUCTURE', value: "${INFRASTRUCTURE}"],
                     [$class: 'StringParameterValue', name: 'INVENTORY', value: 'acceptance'],
@@ -61,11 +57,13 @@ if (BRANCH == "${ACCEPTANCE_BRANCH}") {
                 ]
             }
         }
-  }
-}
+    }
 
-// On master branch, fetch the container, tag with production and latest and deploy to production
-if (BRANCH == "${PRODUCTION_BRANCH}") {
+    stage('Waiting for approval') {
+        slackSend channel: '#ci-channel', color: 'warning', message: 'BAG is waiting for Production Release - please confirm'
+        input "Deploy to Production?"
+    }
+
     node {
         stage("Deploy to PROD") {
             tryStep "deployment", {
