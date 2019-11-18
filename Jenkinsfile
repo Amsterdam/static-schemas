@@ -48,7 +48,7 @@ if (BRANCH == "master") {
         stage("Deploy to ACC") {
             tryStep "deployment", {
                 image.push("acceptance")
-                build job: 'subtask_static_test_deploy_basg',
+                build job: 'Subtask_Openstack_Playbook',
                 parameters: [
                     [$class: 'StringParameterValue', name: 'INFRASTRUCTURE', value: "${INFRASTRUCTURE}"],
                     [$class: 'StringParameterValue', name: 'INVENTORY', value: 'acceptance'],
@@ -69,7 +69,7 @@ if (BRANCH == "master") {
             tryStep "deployment", {
                 image.push("production")
                 image.push("latest")
-                build job: 'subtask_static_test_deploy_basg',
+                build job: 'Subtask_Openstack_Playbook',
                 parameters: [
                     [$class: 'StringParameterValue', name: 'INFRASTRUCTURE', value: "${INFRASTRUCTURE}"],
                     [$class: 'StringParameterValue', name: 'INVENTORY', value: 'production'],
