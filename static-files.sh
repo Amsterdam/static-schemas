@@ -13,7 +13,6 @@ cd amsterdam-schema
 
 git tag -l 'v*' | while read version; do
   git ls-files --with-tree=$version "*.json" ":!test/**" | while read path; do
-    # echo $version $path
     name=${path%.*}
     dir=$TARGET/$(dirname $path)
     mkdir -p $dir
@@ -34,7 +33,7 @@ cd schemas
 
 git ls-files "*.json" ":!test/**" | while read path; do
   name=${path%.*}
-  dir=$TARGET/dataset/$(dirname $name)
+  dir=$TARGET/datasets/$(dirname $name)
   mkdir -p $dir
-  git show HEAD:$path > $TARGET/dataset/$name
+  git show HEAD:$path > $TARGET/datasets/$name
 done
