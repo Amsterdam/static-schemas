@@ -5,14 +5,18 @@ set -x
 
 TARGET=$1
 
-mkdir -p $TARGET/core
-mkdir -p $TARGET/dataset
+if [[ -z "${TARGET}" ]]; then
+  echo "Please supply target directory!"
+  exit 1
+fi
+
+mkdir -p $TARGET/datasets
 
 git clone -q https://github.com/Amsterdam/amsterdam-schema.git
 cd amsterdam-schema
 
 git tag -l 'v*' | while read version; do
-  git ls-files --with-tree=$version "*.json" ":!test/**" | while read path; do
+  git ls-tree -r --name-only $version | grep "\.json\$" | grep -v "^test" | grep -v "^package" | while read path; do
     name=${path%.*}
     dir=$TARGET/$(dirname $path)
     mkdir -p $dir
@@ -20,7 +24,7 @@ git tag -l 'v*' | while read version; do
   done
 done
 
-git ls-files "*.json" ":!test/**" | while read path; do
+git ls-tree -r --name-only HEAD | grep "\.json\$" | grep -v "^test" | grep -v "^package" | while read path; do
   name=${path%.*}
   dir=$(dirname $path)
   mkdir -p $dir
@@ -31,7 +35,7 @@ cd ..
 git clone -q https://github.com/Amsterdam/schemas.git
 cd schemas
 
-git ls-files "*.json" ":!test/**" | while read path; do
+git ls-tree -r --name-only HEAD | grep "\.json\$" | grep -v "^test" | grep -v "^package" | while read path; do
   name=${path%.*}
   dir=$TARGET/datasets/$(dirname $name)
   mkdir -p $dir
