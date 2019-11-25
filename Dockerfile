@@ -11,8 +11,6 @@ COPY ./static-files.sh /app
 WORKDIR /app
 RUN /app/static-files.sh /usr/share/nginx/html
 
-COPY ./health /usr/share/nginx/html
-
 # Healthcheck
 COPY health/index.html /usr/share/nginx/html/health/index.html
 HEALTHCHECK --interval=60s --timeout=1s CMD curl --fail http://localhost:80/health/index.html || exit 1
