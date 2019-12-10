@@ -23,7 +23,7 @@ if (BRANCH == "master" || BRANCH == "develop") {
     node {
         stage('Push acceptance image') {
             tryStep "image tagging", {
-                def image = docker.image("build.data.amsterdam.nl:5000/static-schemas:${env.BUILD_NUMBER}",
+                def image = docker.image("build.data.amsterdam.nl:5000/static/static-schemas:${env.BUILD_NUMBER}",
                     "--shm-size 1G " +
                     "--build-arg BUILD_ENV=acc " +
                     "--build-arg BUILD_NUMBER=${env.BUILD_NUMBER} " +
@@ -53,7 +53,7 @@ if (BRANCH == "master") {
     node {
         stage('Push production image') {
             tryStep "image tagging", {
-                def image = docker.image("build.data.amsterdam.nl:5000/static-schemas:${env.BUILD_NUMBER}",
+                def image = docker.image("build.data.amsterdam.nl:5000/static/static-schemas:${env.BUILD_NUMBER}",
                     "--shm-size 1G " +
                     "--build-arg BUILD_ENV=prod " +
                     "--build-arg BUILD_NUMBER=${env.BUILD_NUMBER} " +
