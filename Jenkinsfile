@@ -1,24 +1,10 @@
 #!groovy
-
-// Project Settings for Deployment
-String PROJECTNAME = "static-schemas"
-String CONTAINERDIR = "."
-String INFRASTRUCTURE = 'thanos'
-String PLAYBOOK = 'deploy-static.yml'
-
-// All other data uses variables, no changes needed for static
-String CONTAINERNAME = "repo.data.amsterdam.nl/static/${PROJECTNAME}:${env.BUILD_NUMBER}"
-String BRANCH = "${env.BRANCH_NAME}"
-
-image = 'initial value'
-
 def tryStep(String message, Closure block, Closure tearDown = null) {
     try {
         block();
     }
     catch (Throwable t) {
-        // Disable while developing
-        // slackSend message: "${env.JOB_NAME}: ${message} failure ${env.BUILD_URL}", channel: '#ci-channel', color: 'danger'
+        slackSend message: "${env.JOB_NAME}: ${message} failure ${env.BUILD_URL}", channel: '#ci-channel', color: 'danger'
         throw t;
     }
     finally {
@@ -27,55 +13,65 @@ def tryStep(String message, Closure block, Closure tearDown = null) {
         }
     }
 }
-
 node {
-    // Get a copy of the code
     stage("Checkout") {
         checkout scm
     }
-
-    // Build the Dockerfile in the $CONTAINERDIR and push it to Nexus
-    stage("Build develop image") {
-        tryStep "build", {
-            image = docker.build("${CONTAINERNAME}","${CONTAINERDIR}")
-            image.push()
-        }
-    }
 }
-
-if (BRANCH == "master") {
+String BRANCH = "${env.BRANCH_NAME}"
+if (BRANCH == "master" || BRANCH == "develop") {
     node {
-        stage("Deploy to ACC") {
-            tryStep "deployment", {
+        stage('Push acceptance image') {
+            tryStep "image tagging", {
+                def image = docker.image("build.data.amsterdam.nl:5000/static-schemas:${env.BUILD_NUMBER}",
+                    "--shm-size 1G " +
+                    "--build-arg BUILD_ENV=acc " +
+                    "--build-arg BUILD_NUMBER=${env.BUILD_NUMBER} " +
+                    ".")
+                image.pull()
                 image.push("acceptance")
-                build job: 'Subtask_Openstack_Playbook',
-                parameters: [
-                    [$class: 'StringParameterValue', name: 'INFRASTRUCTURE', value: "${INFRASTRUCTURE}"],
-                    [$class: 'StringParameterValue', name: 'INVENTORY', value: 'acceptance'],
-                    [$class: 'StringParameterValue', name: 'PLAYBOOK', value: "${PLAYBOOK}"],
-                    [$class: 'StringParameterValue', name: 'STATIC_CONTAINER', value: "${PROJECTNAME}"],
-                ]
             }
         }
     }
-
+    node {
+        stage("Deploy to ACC") {
+            tryStep "deployment", {
+                build job: 'Subtask_Openstack_Playbook',
+                        parameters: [
+                                [$class: 'StringParameterValue', name: 'INVENTORY', value: 'acceptance'],
+                                [$class: 'StringParameterValue', name: 'PLAYBOOK', value: 'deploy-static-schemas.yml'],
+                        ]
+            }
+        }
+    }
+}
+if (BRANCH == "master") {
     stage('Waiting for approval') {
-        slackSend channel: '#ci-channel', color: 'warning', message: 'BAG is waiting for Production Release - please confirm'
+        slackSend channel: '#ci-channel', color: 'warning', message: 'static-schemas is waiting for Production Release - please confirm'
         input "Deploy to Production?"
     }
-
     node {
-        stage("Deploy to PROD") {
-            tryStep "deployment", {
+        stage('Push production image') {
+            tryStep "image tagging", {
+                def image = docker.image("build.data.amsterdam.nl:5000/static-schemas:${env.BUILD_NUMBER}",
+                    "--shm-size 1G " +
+                    "--build-arg BUILD_ENV=prod " +
+                    "--build-arg BUILD_NUMBER=${env.BUILD_NUMBER} " +
+                    ".")
+                image.pull()
                 image.push("production")
                 image.push("latest")
+            }
+        }
+    }
+    node {
+        stage("Deploy") {
+            tryStep "deployment", {
                 build job: 'Subtask_Openstack_Playbook',
-                parameters: [
-                    [$class: 'StringParameterValue', name: 'INFRASTRUCTURE', value: "${INFRASTRUCTURE}"],
-                    [$class: 'StringParameterValue', name: 'INVENTORY', value: 'production'],
-                    [$class: 'StringParameterValue', name: 'PLAYBOOK', value: "${PLAYBOOK}"],
-                    [$class: 'StringParameterValue', name: 'STATIC_CONTAINER', value: "${PROJECTNAME}"],
-                ]
+                        parameters: [
+                                [$class: 'StringParameterValue', name: 'INVENTORY', value: 'production'],
+                                [$class: 'StringParameterValue', name: 'PLAYBOOK', value: 'deploy-static-schemas.yml'],
+                        ]
             }
         }
     }
