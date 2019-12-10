@@ -1,4 +1,5 @@
 #!groovy
+
 def tryStep(String message, Closure block, Closure tearDown = null) {
     try {
         block();
@@ -13,11 +14,22 @@ def tryStep(String message, Closure block, Closure tearDown = null) {
         }
     }
 }
+
 node {
     stage("Checkout") {
         checkout scm
     }
+
+    stage("Build image") {
+        tryStep "build", {
+            docker.withRegistry('https://repo.data.amsterdam.nl','docker-registry') {
+                def image = docker.build("static/static-schemas:${env.BUILD_NUMBER}")
+                image.push()
+            }
+        }
+    }
 }
+
 String BRANCH = "${env.BRANCH_NAME}"
 if (BRANCH == "master" || BRANCH == "develop") {
     node {
