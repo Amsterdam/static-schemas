@@ -5,7 +5,6 @@ String PROJECTNAME = "static-schemas"
 String CONTAINERDIR = "."
 String PRODUCTION_BRANCH = "master"
 String ACCEPTANCE_BRANCH = "development"
-String INFRASTRUCTURE = 'thanos'
 String PLAYBOOK = 'deploy-static-schemas.yml'
 String CONTAINERNAME = "repo.data.amsterdam.nl/static/${PROJECTNAME}:${env.BUILD_NUMBER}"
 String BRANCH = "${env.BRANCH_NAME}"
@@ -15,8 +14,7 @@ def tryStep(String message, Closure block, Closure tearDown = null) {
         block();
     }
     catch (Throwable t) {
-        // Disable while developing
-        // slackSend message: "${env.JOB_NAME}: ${message} failure ${env.BUILD_URL}", channel: '#ci-channel', color: 'danger'
+        slackSend message: "${env.JOB_NAME}: ${message} failure ${env.BUILD_URL}", channel: '#ci-channel', color: 'danger'
         throw t;
     }
     finally {
