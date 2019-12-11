@@ -9,6 +9,7 @@ COPY default.conf /etc/nginx/conf.d/default.conf
 RUN mkdir /app
 COPY ./static-files.sh /app
 WORKDIR /app
+ARG CACHE_BUST=0
 RUN /app/static-files.sh /usr/share/nginx/html
 
 # Healthcheck

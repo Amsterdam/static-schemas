@@ -33,7 +33,7 @@ node {
     // Build the Dockerfile in the $CONTAINERDIR and push it to Nexus
     stage("Build develop image") {
         tryStep "build", {
-            image = docker.build("${CONTAINERNAME}","${CONTAINERDIR}")
+            image = docker.build("${CONTAINERNAME}","${CONTAINERDIR}", "--build-arg CACHE_BUST=${env.BUILD_NUMBER}")
             image.push()
         }
     }
