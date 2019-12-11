@@ -1,4 +1,14 @@
 #!groovy
+
+// Project Settings for Deployment
+String PROJECTNAME = "static-schemas"
+String CONTAINERDIR = "."
+String PRODUCTION_BRANCH = "master"
+String ACCEPTANCE_BRANCH = "development"
+String PLAYBOOK = 'deploy-static-schemas.yml'
+String CONTAINERNAME = "repo.data.amsterdam.nl/static/${PROJECTNAME}:${env.BUILD_NUMBER}"
+String BRANCH = "${env.BRANCH_NAME}"
+
 def tryStep(String message, Closure block, Closure tearDown = null) {
     try {
         block();
@@ -13,64 +23,49 @@ def tryStep(String message, Closure block, Closure tearDown = null) {
         }
     }
 }
+
 node {
+    // Get a copy of the code
     stage("Checkout") {
         checkout scm
     }
-}
-String BRANCH = "${env.BRANCH_NAME}"
-if (BRANCH == "master" || BRANCH == "develop") {
-    node {
-        stage('Push acceptance image') {
-            tryStep "image tagging", {
-                def image = docker.image("build.data.amsterdam.nl:5000/static/static-schemas:${env.BUILD_NUMBER}",
-                    "--shm-size 1G " +
-                    "--build-arg BUILD_ENV=acc " +
-                    "--build-arg BUILD_NUMBER=${env.BUILD_NUMBER} " +
-                    ".")
-                image.pull()
-                image.push("acceptance")
-            }
+
+    // Build the Dockerfile in the $CONTAINERDIR and push it to Nexus
+    stage("Build develop image") {
+        tryStep "build", {
+            image = docker.build("${CONTAINERNAME}","${CONTAINERDIR}")
+            image.push()
         }
     }
+}
+
+// Acceptance branch, fetch the container, label with acceptance and deploy to acceptance
+if (BRANCH == "${ACCEPTANCE_BRANCH}" || BRANCH == "${PRODUCTION_BRANCH}") {
     node {
         stage("Deploy to ACC") {
             tryStep "deployment", {
+                image.push("acceptance")
                 build job: 'Subtask_Openstack_Playbook',
                         parameters: [
                                 [$class: 'StringParameterValue', name: 'INVENTORY', value: 'acceptance'],
-                                [$class: 'StringParameterValue', name: 'PLAYBOOK', value: 'deploy-static-schemas.yml'],
+                                [$class: 'StringParameterValue', name: 'PLAYBOOK', value: "${PLAYBOOK}"],
                         ]
             }
         }
-    }
+  }
 }
-if (BRANCH == "master") {
-    stage('Waiting for approval') {
-        slackSend channel: '#ci-channel', color: 'warning', message: 'static-schemas is waiting for Production Release - please confirm'
-        input "Deploy to Production?"
-    }
+
+// On master branch, fetch the container, tag with production and latest and deploy to production
+if (BRANCH == "${PRODUCTION_BRANCH}") {
     node {
-        stage('Push production image') {
-            tryStep "image tagging", {
-                def image = docker.image("build.data.amsterdam.nl:5000/static/static-schemas:${env.BUILD_NUMBER}",
-                    "--shm-size 1G " +
-                    "--build-arg BUILD_ENV=prod " +
-                    "--build-arg BUILD_NUMBER=${env.BUILD_NUMBER} " +
-                    ".")
-                image.pull()
+        stage("Deploy to PROD") {
+            tryStep "deployment", {
                 image.push("production")
                 image.push("latest")
-            }
-        }
-    }
-    node {
-        stage("Deploy") {
-            tryStep "deployment", {
                 build job: 'Subtask_Openstack_Playbook',
                         parameters: [
                                 [$class: 'StringParameterValue', name: 'INVENTORY', value: 'production'],
-                                [$class: 'StringParameterValue', name: 'PLAYBOOK', value: 'deploy-static-schemas.yml'],
+                                [$class: 'StringParameterValue', name: 'PLAYBOOK', value: "${PLAYBOOK}"],
                         ]
             }
         }
