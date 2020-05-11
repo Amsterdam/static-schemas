@@ -6,7 +6,7 @@ String CONTAINERDIR = "."
 String PRODUCTION_BRANCH = "master"
 String ACCEPTANCE_BRANCH = "development"
 String PLAYBOOK = 'deploy-static-schemas.yml'
-String CONTAINERNAME = "repo.data.amsterdam.nl/static/${PROJECTNAME}:${env.BUILD_NUMBER}"
+String CONTAINERNAME = "docker-registry.data.amsterdam.nl/static/${PROJECTNAME}:${env.BUILD_NUMBER}"
 String BRANCH = "${env.BRANCH_NAME}"
 
 def tryStep(String message, Closure block, Closure tearDown = null) {
