@@ -10,6 +10,8 @@ if [[ -z "${TARGET}" ]]; then
   exit 1
 fi
 
+TARGET=$PWD/$TARGET
+
 mkdir -p $TARGET/datasets
 
 git clone -q https://github.com/Amsterdam/amsterdam-schema.git
@@ -26,7 +28,7 @@ git tag -l 'v*' | while read version; do
 done
 
 # Same for HEAD, does not get @version postfix
-git ls-tree -r --name-only HEAD | grep "\.json\$" | grep -v "^test" | grep -v "^package" | while read path; do
+git ls-tree -r --name-only HEAD | grep "\.json\$" | grep -v "^test" | grep -v "^package" | grep -v "^datasets" | grep -v "^schema" | while read path; do
   name=${path%.*}
   dir=$(dirname $path)
   mkdir -p $dir
