@@ -2,15 +2,15 @@
 
 set -e
 set -x
-
+# TARGET is: /usr/share/nginx/html
+# PWD is: /app
+# NGINX is looking into: /usr/share/nginx/html/
 TARGET=$1
 
 if [[ -z "${TARGET}" ]]; then
   echo "Please supply target directory!"
   exit 1
 fi
-
-TARGET=$PWD/$TARGET
 
 mkdir -p $TARGET/datasets
 
